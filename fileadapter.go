@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -15,6 +16,7 @@ import (
 )
 
 var fileAdapter FileAdapter
+var mutex sync.Mutex
 
 type FileAdapter struct {
 	filepath string
@@ -23,28 +25,14 @@ type FileAdapter struct {
 }
 
 func NewFileAdapter(filepath string) (FileAdapter, error) {
-	file, err := os.Open(filepath)
-
-	if err != nil {
-		return fileAdapter, err
-	}
-
-	data, err := ioutil.ReadAll(file)
-
-	if err != nil {
-		return fileAdapter, err
-	}
-
-	var svcs []Service
-
-	err = unmarshal(data, &svcs)
-
-	fileAdapter = FileAdapter{filepath, svcs, nil}
+	err := loadData(filepath)
 
 	return fileAdapter, err
 }
 
 func NewFileWatcherAdapter(filepath string) (FileAdapter, error) {
+	err := loadData(filepath)
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fileAdapter, err
@@ -55,23 +43,7 @@ func NewFileWatcherAdapter(filepath string) (FileAdapter, error) {
 		return fileAdapter, err
 	}
 
-	file, err := os.Open(filepath)
-
-	if err != nil {
-		return fileAdapter, err
-	}
-
-	data, err := ioutil.ReadAll(file)
-
-	if err != nil {
-		return fileAdapter, err
-	}
-
-	var svcs []Service
-
-	err = unmarshal(data, &svcs)
-
-	fileAdapter = FileAdapter{filepath, svcs, watcher}
+	fileAdapter.watcher = watcher
 
 	return fileAdapter, err
 }
@@ -86,13 +58,15 @@ func (fa FileAdapter) GetService(s string) (Service, error) {
 	return Service{}, fmt.Errorf("fileadapter: cannot find service by name '%s'", s)
 }
 
-func (fa FileAdapter) Watch() {
+func (fa FileAdapter) StartWatcher() {
 	if fa.watcher != nil {
 		for {
 			select {
 			case event := <-fa.watcher.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("modified file:", event.Name)
+					mutex.Lock()
+					loadData(event.Name)
+					mutex.Unlock()
 				}
 			case err := <-fa.watcher.Errors:
 				if err != nil {
@@ -105,6 +79,26 @@ func (fa FileAdapter) Watch() {
 
 func (fa FileAdapter) CloseWatcher() {
 	fa.watcher.Close()
+}
+
+func loadData(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	var svcs []Service
+
+	err = unmarshal(data, &svcs)
+
+	fileAdapter = FileAdapter{filepath, svcs, nil}
+
+	return err
 }
 
 func unmarshal(data []byte, s *[]Service) error {

@@ -84,6 +84,7 @@ func TestFileAdapter_ReturnsCorrectService(t *testing.T) {
 }
 
 func TestFileAdapter_FileWatcher(t *testing.T) {
+	// create tmp file
 	filepath := fmt.Sprintf("test_data/tmp%v", time.Now().Unix())
 
 	file, err := os.Create(filepath)
@@ -95,19 +96,21 @@ func TestFileAdapter_FileWatcher(t *testing.T) {
 
 	fa, _ := NewFileWatcherAdapter(filepath)
 
-	go fa.Watch()
+	// start fsnotify
+	go fa.StartWatcher()
 	defer fa.CloseWatcher()
+
+	// test svc not there
+	_, err = fa.GetService("svc1watch")
+
+	assert.EqualError(t, err, "fileadapter: cannot find service by name 'svc1watch'")
 
 	file.Write([]byte(
 		`{
 			"services": [{
-				"name": "svc1json",
+				"name": "svc1watch",
 				"host": "localhost",
-				"port": "8080"
-			}, {
-				"name": "svc2json",
-				"host": "localhost",
-				"port": "9000"
+				"port": "8181"
 			}]
 		}
 	`))
@@ -115,6 +118,18 @@ func TestFileAdapter_FileWatcher(t *testing.T) {
 	file.Sync()
 
 	time.Sleep(time.Second * 1)
+
+	data := Service{
+		Name: "svc1watch",
+		Host: "localhost",
+		Port: "8181",
+	}
+
+	// test file adapter updated the serices
+	svc, err := fa.GetService("svc1watch")
+
+	assert.NoError(t, err)
+	assert.Equal(t, data, svc)
 
 	os.Remove(filepath)
 }
