@@ -1,0 +1,9 @@
+services:
+    -
+        name: svc1yaml
+        host: localhost
+        port: 8080
+    -
+        name: svc2yaml
+        host: localhost
+        port: 9000

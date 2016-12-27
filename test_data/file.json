@@ -1,0 +1,11 @@
+{
+	"services": [{
+		"name": "svc1json",
+		"host": "localhost",
+		"port": "8080"
+	}, {
+		"name": "svc2json",
+		"host": "localhost",
+		"port": "9000"
+	}]
+}
