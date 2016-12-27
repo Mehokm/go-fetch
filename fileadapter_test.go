@@ -1,7 +1,10 @@
 package fetch
 
 import (
+	"fmt"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,4 +81,40 @@ func TestFileAdapter_ReturnsCorrectService(t *testing.T) {
 	}
 
 	assert.Equal(t, svc, data)
+}
+
+func TestFileAdapter_FileWatcher(t *testing.T) {
+	filepath := fmt.Sprintf("test_data/tmp%v", time.Now().Unix())
+
+	file, err := os.Create(filepath)
+	defer file.Close()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fa, _ := NewFileWatcherAdapter(filepath)
+
+	go fa.Watch()
+	defer fa.CloseWatcher()
+
+	file.Write([]byte(
+		`{
+			"services": [{
+				"name": "svc1json",
+				"host": "localhost",
+				"port": "8080"
+			}, {
+				"name": "svc2json",
+				"host": "localhost",
+				"port": "9000"
+			}]
+		}
+	`))
+
+	file.Sync()
+
+	time.Sleep(time.Second * 1)
+
+	os.Remove(filepath)
 }
