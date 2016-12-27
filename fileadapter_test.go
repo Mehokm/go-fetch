@@ -84,7 +84,7 @@ func TestFileAdapter_ReturnsCorrectService(t *testing.T) {
 }
 
 func TestFileAdapter_FileWatcher(t *testing.T) {
-	// create tmp file
+	// create empty tmp file
 	filepath := fmt.Sprintf("test_data/tmp%v", time.Now().Unix())
 
 	file, err := os.Create(filepath)
