@@ -65,7 +65,7 @@ func (fa FileAdapter) StartWatcher() {
 			case event := <-fa.watcher.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					mutex.Lock()
-					loadData(event.Name)
+					loadData(fa.filepath)
 					mutex.Unlock()
 				}
 			case err := <-fa.watcher.Errors:
