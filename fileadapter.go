@@ -32,6 +32,9 @@ func NewFileAdapter(filepath string) (FileAdapter, error) {
 
 func NewFileWatcherAdapter(filepath string) (FileAdapter, error) {
 	err := loadData(filepath)
+	if err != nil {
+		return fileAdapter, err
+	}
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -81,6 +84,8 @@ func (fa FileAdapter) CloseWatcher() {
 
 func loadData(filepath string) error {
 	file, err := os.Open(filepath)
+	defer file.Close()
+
 	if err != nil {
 		return err
 	}
