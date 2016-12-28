@@ -7,8 +7,15 @@ import (
 
 type StubAdapter struct{}
 
-func (s StubAdapter) GetService(svc string) (Service, error) {
-	return Service{svc, "localhost" + svc, "10001"}, nil
+func (sa StubAdapter) GetService(s string) (Service, error) {
+	svc := Service{
+		Name: s,
+		Addresses: []Address{
+			Address{"localhost", "10001"},
+		},
+	}
+
+	return svc, nil
 }
 
 func TestFetchGetHost(t *testing.T) {

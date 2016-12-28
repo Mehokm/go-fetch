@@ -19,13 +19,17 @@ func TestFileAdapter_CanReadJson(t *testing.T) {
 	data := []Service{
 		Service{
 			Name: "svc1json",
-			Host: "localhost",
-			Port: "8080",
+			Addresses: []Address{
+				Address{"localhost", "8080"},
+				Address{"localhost", "8181"},
+			},
 		},
 		Service{
 			Name: "svc2json",
-			Host: "localhost",
-			Port: "9000",
+			Addresses: []Address{
+				Address{"localhost", "9080"},
+				Address{"localhost", "9081"},
+			},
 		},
 	}
 
@@ -42,13 +46,17 @@ func TestFileAdapter_CanReadYaml(t *testing.T) {
 	data := []Service{
 		Service{
 			Name: "svc1yaml",
-			Host: "localhost",
-			Port: "8080",
+			Addresses: []Address{
+				Address{"localhost", "8080"},
+				Address{"localhost", "8181"},
+			},
 		},
 		Service{
 			Name: "svc2yaml",
-			Host: "localhost",
-			Port: "9000",
+			Addresses: []Address{
+				Address{"localhost", "9080"},
+				Address{"localhost", "9081"},
+			},
 		},
 	}
 
@@ -76,8 +84,10 @@ func TestFileAdapter_ReturnsCorrectService(t *testing.T) {
 
 	data := Service{
 		Name: "svc1yaml",
-		Host: "localhost",
-		Port: "8080",
+		Addresses: []Address{
+			Address{"localhost", "8080"},
+			Address{"localhost", "8181"},
+		},
 	}
 
 	assert.Equal(t, svc, data)
@@ -107,12 +117,17 @@ func TestFileAdapter_FileWatcher(t *testing.T) {
 
 	file.Write([]byte(
 		`{
-			"services": [{
-				"name": "svc1watch",
-				"host": "localhost",
-				"port": "8181"
-			}]
-		}
+        	"services": [{
+        		"name": "svc1watch",
+        		"addresses":[{
+        			"host": "localhost",
+        			"port": "8080"
+        		}, {
+        			"host": "localhost",
+        			"port": "8181"
+        		}]
+        	}]
+        }
 	`))
 
 	file.Sync()
@@ -121,8 +136,10 @@ func TestFileAdapter_FileWatcher(t *testing.T) {
 
 	data := Service{
 		Name: "svc1watch",
-		Host: "localhost",
-		Port: "8181",
+		Addresses: []Address{
+			Address{"localhost", "8080"},
+			Address{"localhost", "8181"},
+		},
 	}
 
 	// test file adapter updated the serices
