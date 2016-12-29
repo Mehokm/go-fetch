@@ -132,7 +132,7 @@ func TestFileAdapter_FileWatcher(t *testing.T) {
 
 	file.Sync()
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Millisecond * 50)
 
 	data := Service{
 		Name: "svc1watch",
