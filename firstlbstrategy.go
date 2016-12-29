@@ -1,8 +1,8 @@
 package fetch
 
-type FirstLoadBalancer struct {
+type firstLoadBalancer struct {
 }
 
-func (flb FirstLoadBalancer) Next(s Service) Address {
+func (flb firstLoadBalancer) Next(s Service) Address {
 	return s.Addresses[0]
 }

@@ -16,7 +16,7 @@ func TestFirstLoadBalancer(t *testing.T) {
 		},
 	}
 
-	flb := FirstLoadBalancer{}
+	flb := firstLoadBalancer{}
 
 	addr := flb.Next(svc)
 

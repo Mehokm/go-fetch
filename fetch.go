@@ -23,7 +23,7 @@ type Address struct {
 }
 
 func init() {
-	strategy = FirstLoadBalancer{}
+	strategy = firstLoadBalancer{}
 }
 
 func Init(a Adapter) {
