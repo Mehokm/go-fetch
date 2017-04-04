@@ -37,6 +37,10 @@ func Use(lb LbStrategy) {
 func GetHost(s string) (string, error) {
 	svc, err := adapter.GetService(s)
 
+	if err != nil {
+		return "", err
+	}
+
 	addr := strategy.Next(svc)
 
 	return addr.Host, err
@@ -45,6 +49,10 @@ func GetHost(s string) (string, error) {
 func GetPort(s string) (string, error) {
 	svc, err := adapter.GetService(s)
 
+	if err != nil {
+		return "", err
+	}
+
 	addr := strategy.Next(svc)
 
 	return addr.Port, err
@@ -52,6 +60,10 @@ func GetPort(s string) (string, error) {
 
 func GetHostAndPort(s string) (string, error) {
 	svc, err := adapter.GetService(s)
+
+	if err != nil {
+		return "", err
+	}
 
 	addr := strategy.Next(svc)
 
