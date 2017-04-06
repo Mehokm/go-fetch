@@ -5,12 +5,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var (
 	envReg = regexp.MustCompile("SVC_[A-Z0-9_]+_ADDR")
-	hosts  = make(map[string][]string)
-	ports  = make(map[string][]string)
 )
 
 const (
@@ -20,13 +19,25 @@ const (
 )
 
 type EnvAdpater struct {
-	hosts map[string][]string
-	ports map[string][]string
+	svcMap map[string]Service
 }
 
-func loadEnvVariables() {
-	envs := os.Environ()
+func NewEnvAdapter() EnvAdpater {
+	return EnvAdpater{parseEnvVariables()}
+}
 
+func (ea EnvAdpater) GetService(s string) (Service, error) {
+	if svc, ok := ea.svcMap[s]; ok {
+		return svc, nil
+	}
+
+	return Service{}, fmt.Errorf("envadapter: cannot find service by name '%s'", s)
+}
+
+func parseEnvVariables() map[string]Service {
+	svcMap := make(map[string]Service)
+
+	envs := os.Environ()
 	for _, env := range envs {
 		eqIndex := strings.Index(env, "=")
 
@@ -34,18 +45,24 @@ func loadEnvVariables() {
 		value := env[eqIndex+1:]
 
 		if envReg.MatchString(key) {
+			hps := strings.Split(removeWhitespace(value), ",")
 			name := parseServiceName(key)
 
-			hps := strings.Fields(value)
+			svc := Service{}
+			svc.Name = name
+			svc.Addresses = make([]Address, len(hps))
 
-			for _, hp := range hps {
-				host, port := parseHostAndPort(hp)
+			for i := 0; i < len(hps); i++ {
+				host, port := parseHostAndPort(hps[i])
 
-				hosts[name] = append(hosts[name], host)
-				ports[name] = append(ports[name], port)
+				svc.Addresses[i].Host = host
+				svc.Addresses[i].Port = port
 			}
+			svcMap[name] = svc
 		}
 	}
+
+	return svcMap
 }
 
 func parseServiceName(s string) string {
@@ -57,36 +74,22 @@ func parseHostAndPort(s string) (string, string) {
 
 	if commaIndex < 0 {
 		return s, "80"
+	} else if commaIndex == 0 && len(s) == 1 {
+		return "localhost", "80"
+	} else if commaIndex == 0 {
+		return "localhost", s[commaIndex+1:]
+	} else if commaIndex == len(s)-1 {
+		return s[:commaIndex], "80"
 	}
 
 	return s[:commaIndex], s[commaIndex+1:]
 }
 
-func NewEnvAdapter() EnvAdpater {
-	loadEnvVariables()
-
-	return EnvAdpater{hosts, ports}
-}
-
-func (ea EnvAdpater) GetService(s string) (Service, error) {
-	svc := Service{}
-	var err error
-
-	hosts, ok1 := ea.hosts[s]
-	ports, ok2 := ea.ports[s]
-
-	if ok1 && ok2 {
-		svc.Name = s
-
-		var addrs []Address
-		for i := 0; i < len(hosts) && i < len(ports); i++ {
-			addrs = append(addrs, Address{Host: hosts[i], Port: ports[i]})
+func removeWhitespace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
 		}
-
-		svc.Addresses = addrs
-	} else {
-		err = fmt.Errorf("envadapter: cannot find service by name '%s'", s)
-	}
-
-	return svc, err
+		return r
+	}, str)
 }
